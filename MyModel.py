@@ -1,4 +1,4 @@
-
+import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -37,5 +37,9 @@ class MyModel(pl.LightningModule):
         logits = self.forward(x)
         loss = F.cross_entropy(logits, y)
         self.log('val_loss', loss)
+        predictions = torch.argmax(logits, dim=1)
+        eq = torch.eq(y, predictions).cpu().detach().numpy()
+        accuracy = np.sum(np.where(eq, 1, 0))/np.size(eq)
+        self.log('val_acc', accuracy)
         return loss
 

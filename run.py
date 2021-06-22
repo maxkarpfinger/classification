@@ -10,6 +10,10 @@ from projects.classification.MyModel import MyModel
 from optuna.integration import PyTorchLightningPruningCallback
 from torch.nn import functional as F
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import torch
+
 
 transform = transforms.Compose([transforms.ToTensor(),
                                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
@@ -43,17 +47,45 @@ def objective(trial):
     loss = np.mean(losses)
     return loss
 
-
+#fit the model
 def run():
-    model = MyModel(1e-4)
+    model = MyModel(1e-5)
     trainer = Trainer(gpus=1, max_epochs=200, callbacks=[EarlyStopping(monitor='val_loss')])
     trainer.fit(model, train_dataloader=cifar10_train, val_dataloaders=cifar10_val)
+    trainer.save_checkpoint("example.ckpt")
+
+
+
+def load_model():
+    new_model = MyModel.load_from_checkpoint(checkpoint_path="D:/Uni/TUM/Master "
+                                                             "Informatik/WS20/projects/classification/lightning_logs"
+                                                             "/version_136/checkpoints/epoch=199-step=8799.ckpt", lr=1e-5)
+
+    first_batch = next(iter(cifar10_val))
+    logits = new_model.forward(first_batch[0])
+    predictions = torch.argmax(logits, dim=1)
+    labels = first_batch[1]
+    first_batch = first_batch[0]
+    label_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    for i in range(0, 9):
+        plt.imshow(first_batch[i].permute(1, 2, 0))
+        if predictions[i] == labels[i]:
+            plt.title(label_names[predictions[i]], fontdict={'color': 'green'})
+        else:
+            plt.title(label_names[predictions[i]], fontdict={'color': 'red'})
+
+        plt.show()
+
+
+
+
 
 
 #study = optuna.create_study()
 #study.optimize(objective, n_trials=100)
-
 #print(study.best_params)
 
-run()
+#run()
+
+load_model()
 
